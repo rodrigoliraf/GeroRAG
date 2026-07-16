@@ -23,6 +23,8 @@ detalhes e problemas de qualidade dos dados em `reports/entrega_semana1.md`).
 | Nome | GitHub |
 | Rodrigo Lira | rodrigoliraf |
 | Antônio Neri | NeriProg |
+| Eric Natan | EricNatanbt |
+| Rodrigo Daniel | rodrigo-ot |
 
 ## Estrutura de pastas
 
