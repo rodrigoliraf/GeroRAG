@@ -140,12 +140,6 @@ pagina = st.sidebar.radio(
     "Navegação",
     ["🏠 Início", "👤 Seleção do Paciente", "💬 Avaliação / Perguntas", "📚 Fontes Recuperadas"],
 )
-st.sidebar.divider()
-st.sidebar.warning(
-    "⚠️ Finalidade exclusivamente educacional.\n\n"
-    "Este sistema não realiza diagnóstico clínico e não substitui "
-    "avaliação profissional."
-)
 
 if not DATA_OK:
     st.error(
@@ -171,13 +165,6 @@ if pagina == "🏠 Início":
     col1.metric("Pacientes na base", f"{len(df_pacientes)}")
     col2.metric("Documentos indexados", "7 (a organizar em docs/)")
     col3.metric("Status do pipeline RAG", "Ainda não implementado")
-
-    st.info(
-        "Este é um **protótipo de interface** (Semana 1). Os dados clínicos "
-        "já vêm do `DATASET_IDOSOS.csv` real (com limpeza básica). O "
-        "chunking, os embeddings, o banco vetorial e a integração com o LLM "
-        "serão implementados nas próximas semanas."
-    )
 
     st.subheader("Como usar")
     st.markdown(
@@ -274,10 +261,10 @@ elif pagina == "💬 Avaliação / Perguntas":
             with st.spinner("Buscando nas diretrizes e gerando avaliação... (simulado)"):
                 time.sleep(1.2)
 
-            st.subheader("📋 Resposta (placeholder)")
+            st.subheader("📋 Resposta")
             st.markdown(
                 """
-                > **Este é um espaço reservado (placeholder).**
+                > **Este é um espaço reservado.**
                 > Nas próximas semanas, esta área exibirá a avaliação
                 > estruturada gerada pelo LLM com base nos dados do paciente
                 > e nos trechos recuperados pelo RAG, contendo:

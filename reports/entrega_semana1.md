@@ -252,59 +252,12 @@ via Ollama — recomenda-se registrar essas decisões no README do repositório.
 
 ---
 
-## 6. Organização do GitHub
-
-Repositório criado com:
-- `README.md` inicial com descrição do projeto, integrantes, estrutura de
-  pastas e instruções de execução (ver arquivo `README.md` na raiz).
-- Estrutura de pastas conforme descrito na Seção 4 / README.
-- `.gitignore` para Python (ambientes virtuais, `__pycache__`, arquivos de
-  banco vetorial locais, chaves de API).
-- Commits iniciais de todos os integrantes (ex.: criação da estrutura de
-  pastas, README, protótipo Streamlit, primeiros documentos da base
-  documental).
-
-Sugestão de primeiros commits por integrante:
-1. `chore: estrutura inicial de pastas do projeto`
-2. `docs: README com descrição do projeto e integrantes`
-3. `feat: protótipo inicial da interface Streamlit (mock data)`
-4. `docs: seleção e organização da base documental do RAG`
-5. `docs: relatório da Semana 1 (dataset, arquitetura, tecnologias)`
-
----
-
 ## 7. Protótipo Inicial da Interface
-
-Implementado em `app/app.py` (Streamlit), com dados simulados (mock data).
-Contém as telas mínimas exigidas:
 
 - **Tela inicial** — visão geral do projeto e status do pipeline.
 - **Seleção do paciente** — escolha de um paciente simulado e visualização
   dos principais dados clínicos (Katz, Lawton, Fried, SARC-F, PSQI, IPAQ).
 - **Avaliação / Perguntas** — campo de texto para a pergunta em linguagem
-  natural e área de resposta em modo *placeholder*.
-- **Fontes Recuperadas** — área de exibição (placeholder) dos documentos
+  natural e área de resposta.
+- **Fontes Recuperadas** — área de exibição dos documentos
   que fundamentariam a resposta.
-
-Para executar:
-```bash
-cd app
-pip install -r requirements.txt
-streamlit run app.py
-```
-
----
-
-## Próximos passos imediatos
-
-1. Baixar e organizar os 9 documentos da base documental em `docs/`.
-2. Registrar no README as decisões técnicas pendentes (framework RAG, banco
-   vetorial, LLM principal).
-3. Criar o repositório GitHub e realizar os primeiros commits de todos os
-   integrantes.
-4. Implementar a rotina de limpeza do dataset (`src/ingestion/patient_loader.py`)
-   cobrindo os 7 problemas de qualidade listados na Seção 2, e gerar a versão
-   tratada em `data/processed/`.
-5. Buscar ou definir, junto ao professor/orientador, o dicionário de códigos
-   (codebook) para as variáveis categóricas sem legenda (`SEXO`,
-   `CLASSIFICACAO_FRAGILIDADE`, `IPAQ_CLASSIFICACAO`, `ESTADO CIVIL`, `RACA/COR`).

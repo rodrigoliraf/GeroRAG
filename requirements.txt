@@ -1,0 +1,12 @@
+# Requisitos completos do projeto GeroRAG.
+# As dependências do protótipo Streamlit (Semana 1) ficam em app/requirements.txt,
+# incluídas abaixo, para evitar duplicação e desalinhamento entre os dois arquivos.
+-r app/requirements.txt
+
+# Próximas semanas (RAG completo) - descomentar conforme for implementando
+# langchain>=0.2
+# llama-index>=0.10
+# sentence-transformers>=3.0
+# chromadb>=0.5
+# openai>=1.0
+# plotly>=5.20
