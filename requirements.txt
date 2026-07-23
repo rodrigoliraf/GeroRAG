@@ -10,3 +10,14 @@
 # chromadb>=0.5
 # openai>=1.0
 # plotly>=5.20
+
+# Dependências para rodar o pipeline de ingestão/chunking (src/ingestion)
+# e a aplicação Streamlit (app/). Para rodar somente o app, veja
+# app/requirements.txt.
+
+pandas>=2.0
+numpy>=1.24
+streamlit>=1.35
+
+# Opcional: necessário apenas se forem adicionados documentos .pdf em docs/
+pypdf>=4.0

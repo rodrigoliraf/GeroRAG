@@ -16,7 +16,17 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import time
+import sys
 from pathlib import Path
+
+# Permite importar o pacote src/ (irmão de app/) independentemente de onde
+# o Streamlit for iniciado.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.ingestion import config as ingestion_config
+from src.ingestion.text_chunker import RecursiveCharacterChunker
+from src.ingestion.document_loader import load_documents
+from src.ingestion.patient_chunker import build_patient_documents
 
 # ---------------------------------------------------------------------------
 # Configuração geral da página
@@ -109,6 +119,40 @@ except Exception as e:
     DATA_OK = False
     DATA_ERROR = str(e)
 
+
+@st.cache_data
+def run_chunking_preview(chunk_size: int, chunk_overlap: int):
+    """Executa o pipeline de chunking (documentos + pacientes) para a
+    página de prévia. Cacheado por combinação de parâmetros."""
+    doc_chunker = RecursiveCharacterChunker(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        min_chunk_chars=ingestion_config.MIN_CHUNK_CHARS,
+    )
+    doc_chunks = []
+    for doc in load_documents():
+        doc_chunks.extend(
+            doc_chunker.chunk_document(
+                text=doc.text, source=doc.source, source_type="documento",
+                metadata=doc.metadata, id_prefix=doc.source,
+            )
+        )
+
+    patient_chunker = RecursiveCharacterChunker(
+        chunk_size=ingestion_config.PATIENT_CHUNK_SIZE,
+        chunk_overlap=ingestion_config.PATIENT_CHUNK_OVERLAP,
+        min_chunk_chars=1,
+    )
+    patient_chunks = []
+    for doc in build_patient_documents(df_pacientes):
+        patient_chunks.extend(
+            patient_chunker.chunk_document(
+                text=doc.text, source=doc.source, source_type="paciente",
+                metadata=doc.metadata, id_prefix=doc.source,
+            )
+        )
+    return doc_chunks, patient_chunks
+
 EXEMPLOS_PERGUNTAS = [
     "Este paciente apresenta sinais de fragilidade?",
     "Como interpretar o escore de Katz?",
@@ -138,7 +182,13 @@ st.sidebar.title("🩺 GeroRAG")
 st.sidebar.caption("Assistente de Avaliação Geriátrica (protótipo)")
 pagina = st.sidebar.radio(
     "Navegação",
-    ["🏠 Início", "👤 Seleção do Paciente", "💬 Avaliação / Perguntas", "📚 Fontes Recuperadas"],
+    [
+        "🏠 Início",
+        "👤 Seleção do Paciente",
+        "💬 Avaliação / Perguntas",
+        "📚 Fontes Recuperadas",
+        "🧩 Chunking (prévia)",
+    ],
 )
 
 if not DATA_OK:
@@ -300,3 +350,56 @@ elif pagina == "📚 Fontes Recuperadas":
             with st.container(border=True):
                 st.markdown(f"**📄 {fonte['documento']}** — página {fonte['pagina']}")
                 st.caption(fonte["trecho"])
+
+# ---------------------------------------------------------------------------
+# Tela 5 - Chunking (prévia) — Semana 2
+# ---------------------------------------------------------------------------
+elif pagina == "🧩 Chunking (prévia)":
+    st.title("Pipeline de Chunking (Semana 2)")
+    st.caption(
+        "Divide os documentos de `docs/` e o resumo clínico de cada paciente "
+        "em chunks prontos para a próxima etapa (embeddings + banco vetorial)."
+    )
+
+    c1, c2 = st.columns(2)
+    chunk_size = c1.slider("Tamanho do chunk (caracteres)", 300, 1500, ingestion_config.DOC_CHUNK_SIZE, step=50)
+    chunk_overlap = c2.slider("Sobreposição (caracteres)", 0, 300, ingestion_config.DOC_CHUNK_OVERLAP, step=10)
+
+    doc_chunks, patient_chunks = run_chunking_preview(chunk_size, chunk_overlap)
+
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Chunks de documentos", len(doc_chunks))
+    m2.metric("Chunks de pacientes", len(patient_chunks))
+    m3.metric("Total de chunks", len(doc_chunks) + len(patient_chunks))
+
+    st.divider()
+    st.subheader("📄 Documentos (docs/)")
+    if not doc_chunks:
+        st.info(
+            "Nenhum documento encontrado em `docs/`. Adicione arquivos `.txt`, "
+            "`.md` ou `.pdf` com diretrizes e manuais de escalas para vê-los "
+            "aqui divididos em chunks."
+        )
+    else:
+        fontes = sorted({c.source for c in doc_chunks})
+        fonte_sel = st.selectbox("Fonte:", fontes)
+        chunks_da_fonte = [c for c in doc_chunks if c.source == fonte_sel]
+        st.caption(f"{len(chunks_da_fonte)} chunk(s) gerados para este documento.")
+        for c in chunks_da_fonte:
+            with st.expander(f"Chunk {c.chunk_index + 1}/{c.total_chunks} — {c.n_chars} caracteres"):
+                st.text(c.text)
+
+    st.divider()
+    st.subheader("👤 Pacientes (resumo clínico → chunk)")
+    if patient_chunks:
+        ids = sorted({c.source for c in patient_chunks})
+        id_sel = st.selectbox("Paciente:", ids)
+        for c in [c for c in patient_chunks if c.source == id_sel]:
+            with st.expander(f"Chunk {c.chunk_index + 1}/{c.total_chunks} — {c.n_chars} caracteres", expanded=True):
+                st.text(c.text)
+
+    st.divider()
+    st.caption(
+        "Para gerar os arquivos `data/processed/chunks*.jsonl` usados pela "
+        "etapa de embeddings, rode: `python -m src.ingestion.run_chunking`"
+    )
