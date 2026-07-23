@@ -45,7 +45,17 @@ GeroRAG/
 │   │   ├── text_chunker.py
 │   │   ├── run_chunking.py
 │   │   └── tests/
+<<<<<<<< HEAD:docs/README.md
 │   ├── embeddings/           # Geração de embeddings
+========
+│   ├── embeddings/           # Geração de embeddings ✅
+│   │   ├── base.py
+│   │   ├── sentence_transformer_embedder.py
+│   │   ├── tfidf_embedder.py
+│   │   ├── store.py
+│   │   ├── run_embeddings.py
+│   │   └── tests/
+>>>>>>>> 81786dc (Geração de Embeddings):README.md
 │   ├── vectorstore/          # Configuração do banco vetorial
 │   ├── rag/                  # Pipeline de recuperação + prompt
 │   └── llm/                  # Integração com o LLM
@@ -102,6 +112,49 @@ Testes unitários do chunker:
 python -m src.ingestion.tests.test_chunking
 ```
 
+<<<<<<<< HEAD:docs/README.md
+========
+## Geração de embeddings (Semana 2)
+
+O módulo `src/embeddings/` transforma os chunks em vetores numéricos:
+
+- **`sentence_transformer_embedder.py`** — backend recomendado, embeddings
+  densos/semânticos via `sentence-transformers` (modelo multilíngue
+  `paraphrase-multilingual-MiniLM-L12-v2`, 384 dimensões). Captura
+  similaridade de significado, não só de palavras — essencial para
+  perguntas em linguagem natural.
+- **`tfidf_embedder.py`** — backend alternativo (TF-IDF, via scikit-learn),
+  100% offline e sem download de modelo. Útil como baseline de comparação
+  ou quando não há internet disponível.
+- **`store.py`** — salva/carrega os vetores (`embeddings.npy`) e os
+  metadados de cada chunk alinhados por posição (`chunk_ids.jsonl`).
+- **`run_embeddings.py`** — orquestra tudo.
+
+```bash
+pip install -r requirements.txt
+
+# backend recomendado (baixa o modelo na primeira execução — requer internet)
+python -m src.embeddings.run_embeddings
+
+# backend 100% offline, sem download de modelo
+python -m src.embeddings.run_embeddings --backend tfidf
+
+# outro modelo / outro arquivo de entrada
+python -m src.embeddings.run_embeddings --model all-MiniLM-L6-v2
+python -m src.embeddings.run_embeddings --input data/processed/chunks_documentos.jsonl
+```
+
+Saída em `data/processed/embeddings/`: `embeddings.npy` (matriz N × dim),
+`chunk_ids.jsonl` (metadados alinhados por linha) e `info.json` (backend,
+dimensão, timestamp).
+
+Testes unitários (usam o backend TF-IDF, sem downloads):
+
+```bash
+python -m src.embeddings.tests.test_embeddings
+```
+
+>>>>>>>> 81786dc (Geração de Embeddings):README.md
 ## Tecnologias
 
 Python · Streamlit · Pandas · LangChain/LlamaIndex · Sentence Transformers ·
@@ -112,6 +165,10 @@ Veja a análise crítica das tecnologias em `reports/`.
 ## Roadmap
 
 - [x] Semana 1 — Estudo do dataset, base documental, arquitetura, protótipo de interface
+<<<<<<<< HEAD:docs/README.md
 - [~] Semana 2 — Chunking ✅ (`src/ingestion/`); embeddings e banco vetorial ainda pendentes
+========
+- [~] Semana 2 — Chunking ✅ e embeddings ✅ (`src/ingestion/`, `src/embeddings/`); banco vetorial ainda pendente
+>>>>>>>> 81786dc (Geração de Embeddings):README.md
 - [ ] Semana 3 — Integração RAG + LLM
 - [ ] Semana 4 — Interface final, testes, documentação e apresentação

@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Artefatos gerados pelos pipelines (podem ser regenerados a qualquer momento)
+data/processed/
