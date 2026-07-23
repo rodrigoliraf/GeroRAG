@@ -32,3 +32,15 @@ PATIENT_CHUNK_SIZE = 1500
 PATIENT_CHUNK_OVERLAP = 0
 
 MIN_CHUNK_CHARS = 40  # descarta fragmentos residuais praticamente vazios
+
+# ---------------------------------------------------------------------------
+# Parâmetros de embeddings (usados por src.embeddings.run_embeddings)
+# ---------------------------------------------------------------------------
+EMBEDDINGS_DIR = DATA_PROCESSED_DIR / "embeddings"
+
+# "sentence-transformers" dá melhor qualidade semântica, mas requer
+# `pip install sentence-transformers` e baixa o modelo na primeira execução.
+# "tfidf" funciona 100% offline, sem downloads.
+DEFAULT_EMBEDDING_BACKEND = "sentence-transformers"
+
+EMBEDDING_BATCH_SIZE = 32
