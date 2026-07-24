@@ -77,15 +77,10 @@ Saída em `data/processed/embeddings`.
 
 ## 3. Banco Vetorial + Busca Semântica
 
-**Dois backends, no módulo `src/vectorstore/`** (mesmo padrão usado nos
-embeddings — abstração comum + múltiplos backends):
 - **`numpy`** (padrão) — busca por similaridade de cosseno em NumPy puro,
   sem nenhuma dependência nova. Para o volume do projeto (602 chunks), a
   busca por força bruta já é praticamente instantânea, e evita a
   complexidade de configurar um banco externo.
-- **`chroma`** (opcional) — ChromaDB, tecnologia já recomendada no
-  relatório de tecnologias da Semana 1, com persistência e filtragem por
-  metadados nativas. Trocar de backend é uma linha no `config.py`.
 
 **Ponto técnico importante:** a pergunta do usuário precisa ser
 vetorizada com o **mesmo embedder** usado para indexar os chunks — por
