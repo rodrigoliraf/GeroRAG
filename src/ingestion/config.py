@@ -44,3 +44,8 @@ EMBEDDINGS_DIR = DATA_PROCESSED_DIR / "embeddings"
 DEFAULT_EMBEDDING_BACKEND = "sentence-transformers"
 
 EMBEDDING_BATCH_SIZE = 32
+
+# --- Vetor store (Semana 2) ---
+VECTORSTORE_DIR = EMBEDDINGS_DIR.parent / "vectorstore"
+DEFAULT_VECTORSTORE_BACKEND = "numpy"   # ou "chroma"
+DEFAULT_TOP_K = 5

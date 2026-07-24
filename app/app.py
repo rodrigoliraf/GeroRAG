@@ -1,15 +1,21 @@
 """
-GeroRAG - Protótipo Inicial de Interface (Semana 1)
+GeroRAG - Protótipo Inicial de Interface (Semana 1-2)
 ----------------------------------------------------
 Este protótipo já carrega e limpa o DATASET_IDOSOS.csv real (RF01-RF03),
-mas ainda NÃO implementa o pipeline RAG nem o LLM (RF04 em diante).
-A área de resposta e a área de fontes recuperadas seguem como placeholders,
-para validar apenas a organização das telas e a navegação.
+executa chunking (RF05) e agora também permite validar a busca semântica
+sobre o banco vetorial já construído (RF07/RF08). A geração da avaliação
+pelo LLM (RF09-RF10) ainda é um placeholder.
 
 Para executar:
     pip install streamlit pandas
     streamlit run app.py
 (o arquivo data/raw/DATASET_IDOSOS.csv deve estar presente na estrutura do repositório)
+
+Antes de usar a aba "🔍 Busca Semântica (prévia)", rode, a partir da raiz
+do projeto:
+    python -m src.ingestion.run_chunking
+    python -m src.embeddings.run_embeddings
+    python -m src.vectorstore.run_build_index
 """
 
 import streamlit as st
@@ -27,6 +33,7 @@ from src.ingestion import config as ingestion_config
 from src.ingestion.text_chunker import RecursiveCharacterChunker
 from src.ingestion.document_loader import load_documents
 from src.ingestion.patient_chunker import build_patient_documents
+from src.vectorstore.search import load_query_embedder, load_vector_store, semantic_search
 
 # ---------------------------------------------------------------------------
 # Configuração geral da página
@@ -153,18 +160,27 @@ def run_chunking_preview(chunk_size: int, chunk_overlap: int):
         )
     return doc_chunks, patient_chunks
 
+
+@st.cache_resource
+def load_search_engine():
+    """Carrega o embedder da pergunta + o índice vetorial UMA vez por sessão
+    (cache_resource, e não cache_data, pois são objetos com estado/modelo,
+    não dados serializáveis). Se o índice ainda não foi construído, retorna
+    (None, None, mensagem_de_erro) em vez de derrubar a página."""
+    try:
+        embedder = load_query_embedder()
+        store = load_vector_store()
+        return embedder, store, None
+    except (FileNotFoundError, ImportError, ValueError) as e:
+        return None, None, str(e)
+
+
 EXEMPLOS_PERGUNTAS = [
     "Este paciente apresenta sinais de fragilidade?",
     "Como interpretar o escore de Katz?",
     "O paciente apresenta risco funcional?",
     "Como está a qualidade do sono?",
     "Quais fatores merecem maior atenção?",
-]
-
-MOCK_FONTES = [
-    {"documento": "Critérios de Fragilidade de Fried", "trecho": "Definição dos 5 componentes da síndrome de fragilidade...", "pagina": 3},
-    {"documento": "Manual da Escala de Katz", "trecho": "Interpretação das pontuações de independência funcional...", "pagina": 7},
-    {"documento": "Escala de Lawton-Brody", "trecho": "Classificação das atividades instrumentais de vida diária...", "pagina": 2},
 ]
 
 # ---------------------------------------------------------------------------
@@ -174,6 +190,8 @@ if "paciente_selecionado" not in st.session_state:
     st.session_state.paciente_selecionado = None
 if "historico" not in st.session_state:
     st.session_state.historico = []
+if "ultima_busca" not in st.session_state:
+    st.session_state.ultima_busca = None  # guarda os resultados da última busca semântica
 
 # ---------------------------------------------------------------------------
 # Barra lateral - navegação
@@ -186,6 +204,7 @@ pagina = st.sidebar.radio(
         "🏠 Início",
         "👤 Seleção do Paciente",
         "💬 Avaliação / Perguntas",
+        "🔍 Busca Semântica (prévia)",
         "📚 Fontes Recuperadas",
         "🧩 Chunking (prévia)",
     ],
@@ -211,10 +230,12 @@ if pagina == "🏠 Início":
         """
     )
 
+    _, _, search_error = load_search_engine()
+
     col1, col2, col3 = st.columns(3)
     col1.metric("Pacientes na base", f"{len(df_pacientes)}")
     col2.metric("Documentos indexados", "7 (a organizar em docs/)")
-    col3.metric("Status do pipeline RAG", "Ainda não implementado")
+    col3.metric("Status do banco vetorial", "✅ Pronto" if search_error is None else "⚠️ Ainda não construído")
 
     st.subheader("Como usar")
     st.markdown(
@@ -222,7 +243,9 @@ if pagina == "🏠 Início":
         1. Vá até **Seleção do Paciente** e escolha um paciente da base.
         2. Acesse **Avaliação / Perguntas** para digitar uma pergunta em
            linguagem natural sobre o paciente.
-        3. Consulte **Fontes Recuperadas** para ver quais documentos
+        3. Use **Busca Semântica (prévia)** para testar/validar diretamente
+           o que o banco vetorial recupera para uma pergunta.
+        4. Consulte **Fontes Recuperadas** para ver quais documentos
            fundamentariam a resposta.
         """
     )
@@ -335,24 +358,97 @@ elif pagina == "💬 Avaliação / Perguntas":
                     st.markdown(f"- **{h['paciente']}**: {h['pergunta']}")
 
 # ---------------------------------------------------------------------------
-# Tela 4 - Fontes Recuperadas
+# Tela 4 - Busca Semântica (prévia) — Semana 2
+# ---------------------------------------------------------------------------
+elif pagina == "🔍 Busca Semântica (prévia)":
+    st.title("Busca Semântica no Banco Vetorial")
+    st.caption(
+        "Tela de validação (RF08): mostra diretamente o que o banco vetorial "
+        "recupera para uma pergunta, com o score de similaridade — sem passar "
+        "pelo LLM ainda. Use para checar se a recuperação faz sentido antes "
+        "de conectar a geração da resposta (Semana 3)."
+    )
+
+    embedder, store, search_error = load_search_engine()
+
+    if search_error is not None:
+        st.warning(
+            "⚠️ Banco vetorial ainda não encontrado. Rode, a partir da raiz do "
+            "projeto:\n\n"
+            "```bash\npython -m src.ingestion.run_chunking\n"
+            "python -m src.embeddings.run_embeddings\n"
+            "python -m src.vectorstore.run_build_index\n```\n\n"
+            f"Detalhe do erro: `{search_error}`"
+        )
+    else:
+        st.success(f"Índice carregado com **{store.count()} chunks**.")
+
+        with st.expander("💡 Exemplos de perguntas"):
+            for p in EXEMPLOS_PERGUNTAS:
+                st.markdown(f"- {p}")
+
+        c1, c2, c3 = st.columns([3, 1, 1])
+        query = c1.text_input(
+            "Pergunta:",
+            placeholder="Ex.: Como está a qualidade do sono?",
+        )
+        top_k = c2.slider("Top-k", 1, 10, ingestion_config.DEFAULT_TOP_K)
+        tipo = c3.selectbox("Filtrar por tipo", ["Todos", "documento", "paciente"])
+        source_type = None if tipo == "Todos" else tipo
+
+        if st.button("Buscar", type="primary", disabled=not query):
+            t0 = time.time()
+            results = semantic_search(
+                query, top_k=top_k, source_type=source_type, embedder=embedder, store=store
+            )
+            elapsed_ms = (time.time() - t0) * 1000
+            st.session_state.ultima_busca = {"query": query, "results": results}
+
+            st.caption(f"{len(results)} resultado(s) em {elapsed_ms:.0f} ms")
+            if not results:
+                st.info(
+                    "Nenhum resultado. Se o filtro for 'documento', confirme que "
+                    "há PDFs em `docs/` já processados pelo chunking (ver "
+                    "`docs/README.md` para baixar os arquivos)."
+                )
+            for i, r in enumerate(results, start=1):
+                with st.container(border=True):
+                    st.markdown(f"**[{i}] score={r.score:.3f} — 📄 {r.source}** (`{r.source_type}`)")
+                    st.write(r.text)
+
+# ---------------------------------------------------------------------------
+# Tela 5 - Fontes Recuperadas
 # ---------------------------------------------------------------------------
 elif pagina == "📚 Fontes Recuperadas":
     st.title("Documentos e Trechos Recuperados")
-    st.caption("Placeholder — a busca semântica real será implementada nas próximas semanas.")
+    st.caption(
+        "Mostra as fontes da última busca feita em 'Avaliação / Perguntas' ou "
+        "em 'Busca Semântica (prévia)' — o que fundamentaria a resposta do LLM."
+    )
 
-    if not st.session_state.historico:
-        st.info("Faça uma pergunta na aba 'Avaliação / Perguntas' para simular a recuperação de fontes.")
-    else:
-        st.markdown(f"Última pergunta: *\"{st.session_state.historico[-1]['pergunta']}\"*")
+    if st.session_state.ultima_busca:
+        st.markdown(f"Última pergunta: *\"{st.session_state.ultima_busca['query']}\"*")
         st.divider()
-        for fonte in MOCK_FONTES:
-            with st.container(border=True):
-                st.markdown(f"**📄 {fonte['documento']}** — página {fonte['pagina']}")
-                st.caption(fonte["trecho"])
+        results = st.session_state.ultima_busca["results"]
+        if not results:
+            st.info("A última busca não retornou nenhuma fonte.")
+        else:
+            for r in results:
+                with st.container(border=True):
+                    st.markdown(f"**📄 {r.source}** — score {r.score:.3f} (`{r.source_type}`)")
+                    st.caption(r.text[:300] + ("..." if len(r.text) > 300 else ""))
+    elif st.session_state.historico:
+        st.info(
+            "Ainda não há resultados reais do banco vetorial para a última "
+            "pergunta feita em 'Avaliação / Perguntas' (essa tela ainda usa "
+            "resposta placeholder). Use **Busca Semântica (prévia)** para ver "
+            "as fontes recuperadas de verdade."
+        )
+    else:
+        st.info("Faça uma pergunta em 'Avaliação / Perguntas' ou em 'Busca Semântica (prévia)' primeiro.")
 
 # ---------------------------------------------------------------------------
-# Tela 5 - Chunking (prévia) — Semana 2
+# Tela 6 - Chunking (prévia) — Semana 2
 # ---------------------------------------------------------------------------
 elif pagina == "🧩 Chunking (prévia)":
     st.title("Pipeline de Chunking (Semana 2)")
