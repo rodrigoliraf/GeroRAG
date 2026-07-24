@@ -5,11 +5,6 @@
 
 ## 1. Chunking
 
-**O que é e por quê.** O RAG não consegue jogar um documento inteiro ou a
-base de pacientes inteira pro modelo de uma vez. Antes de gerar os
-embeddings, é preciso dividir esses dados em pedaços menores — os
-*chunks* — para depois indexar no banco vetorial.
-
 **Como foi implementado.** Um *chunker* recursivo por caracteres: tenta
 cortar respeitando a estrutura natural do texto (primeiro por parágrafo,
 depois por linha, depois por frase, só corta no meio de uma palavra se não
@@ -44,11 +39,6 @@ Saída em `data/processed/`.
 ---
 
 ## 2. Embeddings
-
-**O que é e por quê.** Depois de divididos em chunks, cada trecho precisa
-virar um vetor numérico — é isso que permite comparar o *significado* de
-dois textos matematicamente, não só palavras iguais. Essa comparação é o
-que o RAG usa para buscar os trechos mais relevantes para uma pergunta.
 
 **Dois backends, no módulo `src/embeddings/`:**
 - **`sentence-transformers`** (principal) — embeddings densos/semânticos,
@@ -86,11 +76,6 @@ Saída em `data/processed/embeddings`.
 ---
 
 ## 3. Banco Vetorial + Busca Semântica
-
-**O que é e por quê.** Depois de gerados, os 602 vetores precisam ficar
-guardados de um jeito que permita buscar por *significado*, não só por
-palavra exata — é isso que o banco vetorial faz, indexando os embeddings
-da etapa anterior para consulta rápida.
 
 **Dois backends, no módulo `src/vectorstore/`** (mesmo padrão usado nos
 embeddings — abstração comum + múltiplos backends):
