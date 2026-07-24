@@ -40,15 +40,10 @@ Saída em `data/processed/`.
 
 ## 2. Embeddings
 
-**Dois backends, no módulo `src/embeddings/`:**
 - **`sentence-transformers`** (principal) — embeddings densos/semânticos,
   modelo multilíngue com suporte a português, gera vetores de **384
   posições**. Entende relação de significado (ex.: "perda de força
   muscular" ≈ "fraqueza", mesmo sem palavras em comum).
-- **`tfidf`** (alternativa) — método clássico por frequência de palavras;
-  não entende sinônimos tão bem, mas roda 100% offline, sem baixar
-  modelo — útil sem internet e para testar o pipeline mais rápido durante
-  o desenvolvimento.
 
 **Como validaram (teste de sanidade):** pegaram o vetor de um chunk sobre
 os critérios de Fried e buscaram os vetores mais próximos dele. O
